@@ -27,17 +27,17 @@ def user_input_features():
     age = st.sidebar.slider("Возраст", 18, 100, 35)
     credit_score = st.sidebar.slider("Кредитный рейтинг", 300, 850, 600)
     
-    # Добавленные поля, чтобы модель не выдавала ошибку:
-    tenure = st.sidebar.slider("Сколько лет с банком (Tenure)", 0, 10, 5)
-    balance = st.sidebar.number_input("Баланс на счету", value=0.0)
-    num_products = st.sidebar.selectbox("Кол-во продуктов", (1, 2, 3, 4))
-    has_card = st.sidebar.checkbox("Есть кредитная карта?", value=True)
-    is_active = st.sidebar.checkbox("Активный клиент?", value=True)
-    salary = st.sidebar.number_input("Предполагаемая зарплата", value=50000.0)
+   # НОВЫЕ ПОЛЯ:
+    complain = st.sidebar.checkbox("Были ли жалобы (Complain)?", value=False)
+    satisfaction = st.sidebar.slider("Уровень удовлетворенности (Satisfaction Score)", 1, 5, 3)
+    card_type = st.sidebar.selectbox("Тип карты (Card Type)", ("DIAMOND", "GOLD", "SILVER", "PLATINUM"))
+    points = st.sidebar.number_input("Накопленные баллы (Point Earned)", value=0)
     
-    geo_map = {"France": 0, "Germany": 1, "Spain": 2}
-    gender_map = {"Female": 0, "Male": 1}
+    # Маппинг для типа карты (должен совпадать с тем, что сделал LabelEncoder в ноутбуке)
+    # Если вы использовали LabelEncoder для 'Card Type', порядок обычно алфавитный:
+    card_map = {"DIAMOND": 0, "GOLD": 1, "PLATINUM": 2, "SILVER": 3}
     
+    # Формируем итоговый словарь со ВСЕМИ колонками в правильном порядке
     data = {
         'CreditScore': credit_score,
         'Geography': geo_map[geography],
@@ -48,7 +48,11 @@ def user_input_features():
         'NumOfProducts': num_products,
         'HasCrCard': int(has_card),
         'IsActiveMember': int(is_active),
-        'EstimatedSalary': salary
+        'EstimatedSalary': salary,
+        'Complain': int(complain),
+        'Satisfaction Score': satisfaction,
+        'Card Type': card_map[card_type],
+        'Point Earned': points
     }
     return pd.DataFrame(data, index=[0])
 
@@ -82,4 +86,5 @@ if st.button("Рассчитать риск"):
         st.error(f"Ошибка: Модель ожидает признак {e}, которого нет в форме ввода.")
     except Exception as e:
         st.error(f"Произошла ошибка: {e}")
+
 
