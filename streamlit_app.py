@@ -11,23 +11,30 @@ st.title("Прогноз оттока клиентов банка")
 # Загрузка модели
 @st.cache_resource
 def load_model():
+    # Файл должен лежать в корне репозитория на GitHub
     return joblib.load('xgboost_churn_model.joblib')
 
-model = load_model()
+try:
+    model = load_model()
+except Exception as e:
+    st.error(f"Ошибка загрузки модели: {e}. Убедитесь, что файл .joblib загружен в GitHub.")
 
 st.sidebar.header("Данные клиента")
 
 def user_input_features():
-    # Создаем поля ввода на основе признаков вашего датасета
     geography = st.sidebar.selectbox("География", ("France", "Germany", "Spain"))
     gender = st.sidebar.selectbox("Пол", ("Male", "Female"))
     age = st.sidebar.slider("Возраст", 18, 100, 35)
     credit_score = st.sidebar.slider("Кредитный рейтинг", 300, 850, 600)
+    
+    # Добавленные поля, чтобы модель не выдавала ошибку:
+    tenure = st.sidebar.slider("Сколько лет с банком (Tenure)", 0, 10, 5)
     balance = st.sidebar.number_input("Баланс на счету", value=0.0)
     num_products = st.sidebar.selectbox("Кол-во продуктов", (1, 2, 3, 4))
+    has_card = st.sidebar.checkbox("Есть кредитная карта?", value=True)
     is_active = st.sidebar.checkbox("Активный клиент?", value=True)
+    salary = st.sidebar.number_input("Предполагаемая зарплата", value=50000.0)
     
-    # Маппинг категорий (должен совпадать с тем, как обучали модель!)
     geo_map = {"France": 0, "Germany": 1, "Spain": 2}
     gender_map = {"Female": 0, "Male": 1}
     
@@ -36,10 +43,12 @@ def user_input_features():
         'Geography': geo_map[geography],
         'Gender': gender_map[gender],
         'Age': age,
+        'Tenure': tenure,
         'Balance': balance,
         'NumOfProducts': num_products,
-        'IsActiveMember': int(is_active)
-        # Добавьте остальные колонки, если они использовались при обучении
+        'HasCrCard': int(has_card),
+        'IsActiveMember': int(is_active),
+        'EstimatedSalary': salary
     }
     return pd.DataFrame(data, index=[0])
 
@@ -50,10 +59,15 @@ st.write(input_df)
 
 # Прогноз
 if st.button("Рассчитать риск"):
+    # Делаем копию, чтобы не испортить исходный DF
     prediction = model.predict(input_df)
     probability = model.predict_proba(input_df)[0][1]
     
+    st.divider()
     if prediction[0] == 1:
-        st.error(f"⚠️ Высокий риск ухода! Вероятность: {probability:.2%}")
+        st.error(f"⚠️ **Высокий риск ухода!**")
+        st.write(f"Вероятность: **{probability:.2%}**")
     else:
-        st.success(f"✅ Клиент лоялен. Вероятность ухода: {probability:.2%}")
+        st.success(f"✅ **Клиент лоялен.**")
+        st.write(f"Вероятность ухода: **{probability:.2%}**")
+
