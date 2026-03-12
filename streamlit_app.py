@@ -59,15 +59,27 @@ st.write(input_df)
 
 # Прогноз
 if st.button("Рассчитать риск"):
-    # Делаем копию, чтобы не испортить исходный DF
-    prediction = model.predict(input_df)
-    probability = model.predict_proba(input_df)[0][1]
-    
-    st.divider()
-    if prediction[0] == 1:
-        st.error(f"⚠️ **Высокий риск ухода!**")
-        st.write(f"Вероятность: **{probability:.2%}**")
-    else:
-        st.success(f"✅ **Клиент лоялен.**")
-        st.write(f"Вероятность ухода: **{probability:.2%}**")
+    try:
+        # 1. Получаем список имен признаков, которые ожидает модель
+        expected_features = model.get_booster().feature_names
+        
+        # 2. Переупорядочиваем колонки в input_df в соответствии с моделью
+        # Если каких-то колонок не хватает, это вызовет понятную ошибку
+        input_df_reshaped = input_df[expected_features]
+        
+        prediction = model.predict(input_df_reshaped)
+        probability = model.predict_proba(input_df_reshaped)[0][1]
+        
+        st.divider()
+        if prediction[0] == 1:
+            st.error(f"⚠️ **Высокий риск ухода!**")
+            st.write(f"Вероятность: **{probability:.2%}**")
+        else:
+            st.success(f"✅ **Клиент лоялен.**")
+            st.write(f"Вероятность ухода: **{probability:.2%}**")
+            
+    except KeyError as e:
+        st.error(f"Ошибка: Модель ожидает признак {e}, которого нет в форме ввода.")
+    except Exception as e:
+        st.error(f"Произошла ошибка: {e}")
 
